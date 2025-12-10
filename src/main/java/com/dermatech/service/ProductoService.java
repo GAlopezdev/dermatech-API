@@ -6,8 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dermatech.DTO.ProductoDTO;
+import com.dermatech.model.CategoriaProducto;
 import com.dermatech.model.Producto;
 import com.dermatech.repository.IProductoRepository;
+
+import jakarta.transaction.Transactional;
+
 import java.util.stream.Collectors;
 @Service
 public class ProductoService {
@@ -27,6 +31,15 @@ public class ProductoService {
 		return convertirADTO(producto);
 	}
 	
+	@Transactional
+    public ProductoDTO crear(ProductoDTO dto) {
+        Producto producto = convertirAEntidad(dto);
+        producto.setActivo(true);
+        Producto guardado = productoRepository.save(producto);
+        return convertirADTO(guardado);
+    }
+
+	
 	private ProductoDTO convertirADTO(Producto producto) {
         ProductoDTO dto = new ProductoDTO();
         dto.setIdProducto(producto.getIdProducto());
@@ -40,5 +53,21 @@ public class ProductoService {
         dto.setIdCategoria(producto.getCategoria().getIdCategoria());
         dto.setNombreCategoria(producto.getCategoria().getNombreCategoria());
         return dto;
+    }
+	
+	private Producto convertirAEntidad(ProductoDTO dto) {
+        Producto producto = new Producto();
+        producto.setNombreProducto(dto.getNombreProducto());
+        producto.setDescripcion(dto.getDescripcion());
+        producto.setPrecio(dto.getPrecio());
+        producto.setStock(dto.getStock());
+        producto.setImagenUrl(dto.getImagenUrl());
+        producto.setSku(dto.getSku());
+        
+        CategoriaProducto c = new CategoriaProducto();
+        c.setIdCategoria(dto.getIdCategoria());
+        producto.setCategoria(c);
+        
+        return producto;
     }
 }
