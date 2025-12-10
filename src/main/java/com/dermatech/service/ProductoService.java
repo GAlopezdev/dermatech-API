@@ -22,7 +22,10 @@ public class ProductoService {
             .collect(Collectors.toList());
     }
 	
-	
+	public ProductoDTO obtenerProducto(int id) {
+		Producto producto = productoRepository.findById(id).orElseThrow();
+		return convertirADTO(producto);
+	}
 	
 	private ProductoDTO convertirADTO(Producto producto) {
         ProductoDTO dto = new ProductoDTO();
