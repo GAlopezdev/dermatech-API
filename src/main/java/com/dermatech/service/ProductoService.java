@@ -90,4 +90,11 @@ public class ProductoService {
         
         return producto;
     }
+	
+	@Transactional
+    public void eliminar(Integer id) {
+        Producto producto = productoRepository.findById(id).orElseThrow();
+        producto.setActivo(false);
+        productoRepository.save(producto);
+    }
 }
