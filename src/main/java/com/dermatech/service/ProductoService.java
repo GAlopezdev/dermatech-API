@@ -38,6 +38,26 @@ public class ProductoService {
         Producto guardado = productoRepository.save(producto);
         return convertirADTO(guardado);
     }
+	
+	@Transactional
+	public ProductoDTO actualizar(int id, ProductoDTO dto){
+
+		Producto producto = productoRepository.findById(id).orElseThrow();
+		
+		producto.setNombreProducto(dto.getNombreProducto());
+        producto.setDescripcion(dto.getDescripcion());
+        producto.setPrecio(dto.getPrecio());
+        producto.setStock(dto.getStock());
+        producto.setImagenUrl(dto.getImagenUrl());
+        
+        CategoriaProducto categoria = new CategoriaProducto();
+        categoria.setIdCategoria(dto.getIdCategoria());
+        producto.setCategoria(categoria);
+        
+        Producto actualizado = productoRepository.save(producto);
+		
+		return convertirADTO(actualizado);
+	}
 
 	
 	private ProductoDTO convertirADTO(Producto producto) {
