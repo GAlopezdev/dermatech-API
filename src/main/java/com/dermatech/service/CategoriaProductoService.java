@@ -22,6 +22,13 @@ public class CategoriaProductoService {
             .toList();
     }
 	
+	public List<CategoriaProductoDTO> obtenerTodasCategoriasActivas() {
+        return categoriaProductoRepository.findByActivoTrue()
+            .stream()
+            .map(this::convertirADTO)
+            .toList();
+    }
+	
 	private CategoriaProductoDTO convertirADTO(CategoriaProducto categoria) {
         CategoriaProductoDTO dto = new CategoriaProductoDTO();
         dto.setIdCategoria(categoria.getIdCategoria());

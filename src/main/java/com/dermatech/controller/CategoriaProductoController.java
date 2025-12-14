@@ -22,4 +22,9 @@ public class CategoriaProductoController {
     public ResponseEntity<List<CategoriaProductoDTO>> obtenerTodas() {
         return ResponseEntity.ok(_categoriaService.obtenerTodasCategorias());
     }
+	
+	@GetMapping("/activas")
+    public ResponseEntity<List<CategoriaProductoDTO>> obtenerTodasActivas() {
+        return ResponseEntity.ok(_categoriaService.obtenerTodasCategoriasActivas());
+    }
 }
