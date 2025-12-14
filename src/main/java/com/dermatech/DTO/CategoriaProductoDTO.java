@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoriaProductoDTO {
 	
-	private int idCategoria;
+	private Integer idCategoria;
     private String nombreCategoria;
     private String descripcion;
     private Boolean activo;

@@ -9,5 +9,5 @@ import com.dermatech.model.CategoriaProducto;
 public interface ICategoriaProductoRepository extends JpaRepository<CategoriaProducto, Integer>{
 
 	List<CategoriaProducto> findByActivoTrue();
-	
+	boolean existsByNombreCategoria(String nombre);
 }

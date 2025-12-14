@@ -9,6 +9,8 @@ import com.dermatech.DTO.CategoriaProductoDTO;
 import com.dermatech.model.CategoriaProducto;
 import com.dermatech.repository.ICategoriaProductoRepository;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class CategoriaProductoService {
 
@@ -27,6 +29,21 @@ public class CategoriaProductoService {
             .stream()
             .map(this::convertirADTO)
             .toList();
+    }
+	
+	@Transactional
+    public CategoriaProductoDTO crearCategoria(CategoriaProductoDTO dto) {
+        if (categoriaProductoRepository.existsByNombreCategoria(dto.getNombreCategoria())) {
+            throw new IllegalArgumentException("Ya existe una categoría con ese nombre");
+        }
+        
+        CategoriaProducto categoria = new CategoriaProducto();
+        categoria.setNombreCategoria(dto.getNombreCategoria());
+        categoria.setDescripcion(dto.getDescripcion());
+        categoria.setActivo(true);
+        
+        CategoriaProducto guardada = categoriaProductoRepository.save(categoria);
+        return convertirADTO(guardada);
     }
 	
 	private CategoriaProductoDTO convertirADTO(CategoriaProducto categoria) {
