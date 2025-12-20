@@ -46,6 +46,34 @@ public class CategoriaProductoService {
         return convertirADTO(guardada);
     }
 	
+	@Transactional
+    public CategoriaProductoDTO actualizarCategoria(Integer id, CategoriaProductoDTO dto) {
+        CategoriaProducto categoria = categoriaProductoRepository.findById(id).orElseThrow();
+        
+        // Verificar si el nuevo nombre ya existe
+        if (!categoria.getNombreCategoria().equalsIgnoreCase(dto.getNombreCategoria()) &&
+        		categoriaProductoRepository.existsByNombreCategoria(dto.getNombreCategoria())) {
+            throw new IllegalArgumentException("Ya existe una categoría con ese nombre");
+        }
+        
+        categoria.setNombreCategoria(dto.getNombreCategoria());
+        categoria.setDescripcion(dto.getDescripcion());
+        categoria.setActivo(dto.getActivo());
+        
+        CategoriaProducto actualizada = categoriaProductoRepository.save(categoria);
+        return convertirADTO(actualizada);
+    }
+	
+	@Transactional
+	public CategoriaProductoDTO cambiarEstado(Integer id) {
+		CategoriaProducto categoria = categoriaProductoRepository.findById(id).orElseThrow();
+		
+		categoria.setActivo(!categoria.getActivo());
+		
+		CategoriaProducto actualizada = categoriaProductoRepository.save(categoria);
+        return convertirADTO(actualizada);
+	}
+	
 	private CategoriaProductoDTO convertirADTO(CategoriaProducto categoria) {
         CategoriaProductoDTO dto = new CategoriaProductoDTO();
         dto.setIdCategoria(categoria.getIdCategoria());
