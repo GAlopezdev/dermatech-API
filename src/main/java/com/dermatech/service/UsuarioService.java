@@ -1,12 +1,14 @@
 package com.dermatech.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dermatech.DTO.Usuario.UsuarioCreateDTO;
 import com.dermatech.DTO.Usuario.UsuarioDTO;
+import com.dermatech.DTO.Usuario.UsuarioMapperDTO;
 import com.dermatech.DTO.Usuario.UsuarioUpdateDTO;
 import com.dermatech.model.Rol;
 import com.dermatech.model.Usuario;
@@ -18,6 +20,10 @@ import jakarta.transaction.Transactional;
 public class UsuarioService {
     @Autowired
     private IUsuarioRepository usuarioRepository;
+    
+    @Autowired
+    private UsuarioMapperDTO mapper;
+
 
     public List<UsuarioDTO> obtenerTodosLosUsuarios() {
         return usuarioRepository.findAll()
@@ -119,5 +125,24 @@ public class UsuarioService {
 
         return dto;
     }
+    
+
+    public UsuarioDTO login(String email, String contrasenia) {
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByEmail(email);
+
+        if (optionalUsuario.isPresent()) {
+            Usuario usuario = optionalUsuario.get();
+            if (usuario.getContrasenia().equals(contrasenia)) {
+                return mapper.toDTO(usuario);
+            }
+        }
+        return null;
+    }
+    public List<UsuarioDTO> obtenerTodosLosUsuariosList() {
+        return usuarioRepository.findAll().stream()
+                .map(mapper::toDTO)
+                .toList();
+    }
+
 
 }
