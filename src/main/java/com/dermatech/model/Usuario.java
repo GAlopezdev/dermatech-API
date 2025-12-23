@@ -2,6 +2,7 @@ package com.dermatech.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -22,7 +23,7 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario")
-    private int idUsuario;
+    private Integer idUsuario;
     
     @Column(name = "nombre_completo")
     private String nombreCompleto;
@@ -51,8 +52,8 @@ public class Usuario {
     @Column(name = "fecha_registro")
     private String fechaRegistro;
     
-    @ManyToOne
-    @JoinColumn(name = "id_rol")
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_rol", nullable = false)
     private Rol rol;
     
 }
