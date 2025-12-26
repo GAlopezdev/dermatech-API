@@ -1,7 +1,7 @@
 package com.dermatech.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,9 +20,13 @@ import jakarta.transaction.Transactional;
 
 @Service
 public class UsuarioService {
+
     @Autowired
     private IUsuarioRepository usuarioRepository;
     
+    @Autowired
+    private IRolesRepository rolRepository;
+
     @Autowired
     private UsuarioMapperDTO mapper;
 
@@ -37,19 +41,14 @@ public class UsuarioService {
     }
 
     public UsuarioDTO obtenerUsuarioPorId(Integer id) {
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         return convertirADTO(usuario);
     }
 
-    @Autowired
-    private IRolesRepository rolRepository;
-
     @Transactional
     public UsuarioDTO crearUsuario(UsuarioCreateDTO dto) {
-        System.out.println("=== CREAR USUARIO ===");
-        System.out.println("DTO recibido: " + dto);
-        
-        // Validaciones básicas
+        // 1. Validaciones de existencia
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new IllegalArgumentException("El email ya está registrado");
         }
@@ -57,75 +56,71 @@ public class UsuarioService {
             throw new IllegalArgumentException("El DNI ya está registrado");
         }
 
-        // Determinar el rol
-        Integer idRol = dto.getIdRol() != null ? dto.getIdRol() : 1; // Por defecto PACIENTE (1)
-        
+        // 2. Determinar el rol (Por defecto 1 - PACIENTE si viene nulo)
+        Integer idRol = (dto.getIdRol() != null) ? dto.getIdRol() : 1;
         Rol rol = rolRepository.findById(idRol)
-                .orElseThrow(() -> new RuntimeException("Rol con ID " + idRol + " no encontrado"));
-        
-        System.out.println("Rol asignado: " + rol.getIdRol() + " - " + rol.getNombreRol());
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
 
-        // Crear usuario
+        // 3. Mapeo manual a la Entidad
         Usuario usuario = new Usuario();
         usuario.setNombreCompleto(dto.getNombreCompleto());
         usuario.setEmail(dto.getEmail());
+        
+        // ENCRIPTACIÓN: Vital para que el login funcione
         usuario.setContrasenia(passwordEncoder.encode(dto.getContrasenia()));
+        
         usuario.setTelefono(dto.getTelefono());
         usuario.setDni(dto.getDni());
         usuario.setDireccion(dto.getDireccion());
         usuario.setFechaNacimiento(dto.getFechaNacimiento());
-        usuario.setActivo(true);
         usuario.setRol(rol);
-
-        System.out.println("Guardando usuario con rol: " + usuario.getRol().getNombreRol());
         
-        Usuario usuarioGuardado = usuarioRepository.save(usuario);
+        // ESTADO Y FECHAS: Soluciona el error de "Column cannot be null"
+        usuario.setActivo(true);
+        usuario.setFechaRegistro(LocalDateTime.now().toString()); 
 
+        Usuario usuarioGuardado = usuarioRepository.save(usuario);
         return convertirADTO(usuarioGuardado);
-    }    
+    }
+
     @Transactional
     public UsuarioDTO actualizarUsuario(Integer id, UsuarioUpdateDTO dto) {
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
-
-        
-//        // Validar email si cambió
-//        if (!usuario.getEmail().equals(dto.getEmail()) &&
-//                usuarioRepository.existsByEmail(dto.getEmail())) {
-//            throw new IllegalArgumentException("El email ya está registrado");
-//        }
-//
-//        // Validar DNI si cambió
-//        if (!usuario.getDni().equals(dto.getDni()) &&
-//                usuarioRepository.existsByDni(dto.getDni())) {
-//            throw new IllegalArgumentException("El DNI ya está registrado");
-//        }
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         usuario.setNombreCompleto(dto.getNombreCompleto());
         usuario.setEmail(dto.getEmail());
-        usuario.setContrasenia(passwordEncoder.encode(dto.getContrasenia()));
+        
+        // Solo actualizamos contraseña si se envía una nueva
+        if (dto.getContrasenia() != null && !dto.getContrasenia().isBlank()) {
+            usuario.setContrasenia(passwordEncoder.encode(dto.getContrasenia()));
+        }
+        
         usuario.setTelefono(dto.getTelefono());
         usuario.setDni(dto.getDni());
         usuario.setDireccion(dto.getDireccion());
         usuario.setFechaNacimiento(dto.getFechaNacimiento());
         usuario.setActivo(dto.getActivo());
 
-        // Cambiar rol si se envía
         if (dto.getIdRol() != null) {
-            Rol rol = new Rol();
-            rol.setIdRol(dto.getIdRol());
+            Rol rol = rolRepository.findById(dto.getIdRol())
+                    .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
             usuario.setRol(rol);
         }
 
-        Usuario usuarioActualizado = usuarioRepository.save(usuario);
-        return convertirADTO(usuarioActualizado);
+        return convertirADTO(usuarioRepository.save(usuario));
     }
 
-    @Transactional
-    public UsuarioDTO cambiarEstado(Integer id) {
-        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
-        usuario.setActivo(!usuario.getActivo());
-        usuarioRepository.save(usuario);
-        return convertirADTO(usuario);
+    public Usuario login(String email, String contrasenia) {
+        Usuario encontrado = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        
+        // Verifica la contraseña encriptada
+        if (!passwordEncoder.matches(contrasenia, encontrado.getContrasenia())) {
+            throw new RuntimeException("Contraseña incorrecta");
+        }
+        
+        return encontrado;
     }
 
     private UsuarioDTO convertirADTO(Usuario usuario) {
@@ -139,32 +134,14 @@ public class UsuarioService {
         dto.setDireccion(usuario.getDireccion());
         dto.setFechaNacimiento(usuario.getFechaNacimiento());
         dto.setActivo(usuario.getActivo());
-
+        // Importante: No olvides setear el Rol en el DTO si tu DTO lo requiere
         return dto;
     }
-    
 
-	public Usuario login(String email, String contrasenia) {
-		Usuario encontrado = usuarioRepository.findByEmail(email)
-					.orElseThrow(()->new RuntimeException("Usuario no encontrado"));
-		
-		if (!passwordEncoder.matches(contrasenia, encontrado.getContrasenia())) {
-			throw new RuntimeException("Contraseña incorrecta");
-		}
-		
-		return encontrado;
-	}
-    public List<UsuarioDTO> obtenerTodosLosUsuariosList() {
-        return usuarioRepository.findAll().stream()
-                .map(mapper::toDTO)
-                .toList();
+    @Transactional
+    public UsuarioDTO cambiarEstado(Integer id) {
+        Usuario usuario = usuarioRepository.findById(id).orElseThrow();
+        usuario.setActivo(!usuario.getActivo());
+        return convertirADTO(usuarioRepository.save(usuario));
     }
-    public Usuario registrarUsuario(Usuario usuario) { 
-        // codifica la contraseña antes de guardarla 
-        usuario.setContrasenia(passwordEncoder.encode(usuario.getContrasenia()));
-        usuario.setActivo(true);
-        return usuarioRepository.save(usuario); 
-    }
-
-
 }
